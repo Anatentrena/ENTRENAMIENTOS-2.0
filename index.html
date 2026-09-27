@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="es"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calendario de entrenamientos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&amp;family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EDEAE3; --ink:#201620; --card:#FFFFFF; --muted:#756E6A;
+    --accent:#E63997; --accent-ink:#201620;
+    --work:#FF6B4A; --rest:#2FA88E; --line:rgba(32,22,32,.12);
+  }
+  :root:not([data-theme="light"]) { }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#171015; --ink:#F3EFE8; --card:#211923; --muted:#B3A9A6;
+      --line:rgba(243,239,232,.14);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#171015; --ink:#F3EFE8; --card:#211923; --muted:#B3A9A6;
+    --line:rgba(243,239,232,.14);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-padding-top:env(safe-area-inset-top,0px);}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+    min-height:100%;
+  }
+  .wrap{max-width:640px; margin:0 auto; padding:28px 18px 60px;}
+  .brand{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:22px;}
+  .brand h1{font-family:"Bebas Neue"; font-size:34px; letter-spacing:.5px; margin:0; line-height:1;}
+  .brand span{color:var(--muted); font-size:13px;}
+
+  .cal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+  .cal-head h2{font-family:"Bebas Neue"; font-size:26px; letter-spacing:.5px; margin:0; text-transform:capitalize;}
+  .nav-btn{background:none; border:1px solid var(--line); color:var(--ink); width:36px; height:36px; border-radius:8px; font-size:16px; cursor:pointer;}
+  .nav-btn:hover{border-color:var(--ink);}
+
+  .dow{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:6px;}
+  .dow div{text-align:center; font-size:11px; color:var(--muted); font-weight:600;}
+
+  .grid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
+  .day{
+    aspect-ratio:1; border-radius:10px; border:1px solid var(--line);
+    background:var(--card); display:flex; flex-direction:column; align-items:center; justify-content:center;
+    position:relative; color:var(--ink); font-size:13px;
+  }
+  .day.empty{border:none; background:transparent;}
+  .day .n{font-family:"Bebas Neue"; font-size:17px; line-height:1;}
+  .day.has-work{cursor:pointer; border-color:transparent;}
+  .day.has-work .n{color:var(--accent-ink);}
+  .day.has-work{background:var(--accent);}
+  .day.has-work:active{transform:scale(.96);}
+  .day.today{outline:2px solid var(--ink);}
+  .day .dot{width:5px; height:5px; border-radius:50%; background:var(--ink); margin-top:2px; opacity:.5;}
+
+  .legend{display:flex; gap:16px; margin-top:16px; font-size:12px; color:var(--muted);}
+  .legend .sw{display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; vertical-align:-1px;}
+
+  /* Workout view */
+  #workoutView{display:none;}
+  .back{display:inline-flex; align-items:center; gap:6px; background:none; border:none; color:var(--muted); font-size:14px; cursor:pointer; padding:0 0 18px; font-family:Inter;}
+  .w-title{font-family:"Bebas Neue"; font-size:36px; line-height:1.02; margin:0 0 4px;}
+  .w-focus{color:var(--muted); font-size:14px; margin-bottom:22px;}
+
+  .exlist{list-style:none; margin:0 0 10px; padding:0; border-top:1px solid var(--line);}
+  .exlist li{padding:14px 0; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .exlist .exmain{display:flex; flex-direction:column; gap:2px;}
+  .exlist .exname{font-weight:600;}
+  .exlist .exdetail{color:var(--muted); font-size:13px;}
+  .exlist .exvid{flex-shrink:0; display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:50%; background:var(--ink); color:var(--bg); text-decoration:none; font-size:13px;}
+  .exlist .exnote{padding:8px 0; color:var(--muted); font-size:13px; font-style:italic;}
+
+  .block{margin-bottom:26px;}
+  .block-name{font-family:"Bebas Neue"; font-size:19px; letter-spacing:.3px; margin:0 0 4px;}
+
+  /* Timer */
+  .timer-card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px; margin-bottom:20px;}
+  .timer-card h3{font-family:"Bebas Neue"; font-size:20px; letter-spacing:.5px; margin:0 0 14px;}
+
+  .survey-card{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px; margin-bottom:20px;}
+  .survey-card h3{font-family:"Bebas Neue"; font-size:20px; letter-spacing:.5px; margin:0 0 16px;}
+  .survey-card .field{margin-bottom:14px;}
+  .survey-card .field input, .survey-card .field textarea{width:100%; padding:10px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font-size:14px; font-family:Inter;}
+  .survey-card .field textarea{min-height:60px; resize:vertical;}
+  .field-label{font-size:11px; color:var(--muted); margin-bottom:8px; text-transform:uppercase; letter-spacing:.5px;}
+  .scale-row{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px;}
+  .scale-btn{width:34px; height:34px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font-weight:700; font-size:13px; cursor:pointer; font-family:Inter;}
+  .scale-btn.sel{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
+  .done-row{display:flex; gap:10px; margin-bottom:16px;}
+  .done-btn{flex:1; padding:12px 8px; border-radius:9px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font-weight:600; font-size:13px; cursor:pointer; font-family:Inter;}
+  .done-btn.sel{background:var(--ink); color:var(--bg); border-color:var(--ink);}
+  .survey-submit{width:100%; padding:12px; border-radius:9px; border:none; background:var(--accent); color:var(--accent-ink); font-weight:700; font-size:14px; cursor:pointer; font-family:Inter;}
+  .survey-msg{text-align:center; font-size:13px; color:var(--muted); margin-top:10px;}
+  .cfg-row{display:flex; gap:10px; margin-bottom:16px;}
+  .cfg{flex:1;}
+  .cfg label{display:block; font-size:11px; color:var(--muted); margin-bottom:5px;}
+  .cfg input{width:100%; padding:9px 8px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--ink); font-size:15px; font-family:Inter; text-align:center;}
+
+  .phase{
+    border-radius:12px; padding:26px 10px; text-align:center; margin-bottom:16px;
+    background:var(--bg); border:1px solid var(--line); transition:background .3s;
+  }
+  .phase.work{background:var(--work); border-color:var(--work);}
+  .phase.rest{background:var(--rest); border-color:var(--rest);}
+  .phase-label{font-size:13px; font-weight:700; letter-spacing:1px; color:var(--ink); opacity:.75;}
+  .phase.work .phase-label, .phase.rest .phase-label{color:#12100D; opacity:.85;}
+  .clock{font-family:"Bebas Neue"; font-size:64px; line-height:1.05; color:var(--ink);}
+  .phase.work .clock, .phase.rest .clock{color:#12100D;}
+  .round-info{font-size:13px; color:var(--muted); margin-top:2px;}
+  .phase.work .round-info, .phase.rest .round-info{color:#12100D; opacity:.75;}
+
+  .timer-btns{display:flex; gap:10px;}
+  .timer-btns button{
+    flex:1; padding:12px; border-radius:9px; border:none; font-weight:700; font-size:14px; cursor:pointer;
+    font-family:Inter;
+  }
+  .btn-start{background:var(--ink); color:var(--bg);}
+  .btn-reset{background:none; border:1px solid var(--line) !important; color:var(--ink);}
+
+  .empty-state{text-align:center; padding:40px 10px; color:var(--muted); font-size:14px;}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="brand">
+    <h1>Entrenamientos</h1>
+    <span id="todayLabel">Sáb 26 sep</span>
+  </div>
+
+  <div id="calendarView" style="display: block;">
+    <div class="cal-head">
+      <button class="nav-btn" id="prevMonth">‹</button>
+      <h2 id="monthLabel">septiembre de 2026</h2>
+      <button class="nav-btn" id="nextMonth">›</button>
+    </div>
+    <div class="dow">
+      <div>L</div><div>M</div><div>X</div><div>J</div><div>V</div><div>S</div><div>D</div>
+    </div>
+    <div class="grid" id="grid"><div class="day empty"></div><div class="day"><div class="n">1</div></div><div class="day"><div class="n">2</div></div><div class="day"><div class="n">3</div></div><div class="day"><div class="n">4</div></div><div class="day"><div class="n">5</div></div><div class="day"><div class="n">6</div></div><div class="day"><div class="n">7</div></div><div class="day"><div class="n">8</div></div><div class="day"><div class="n">9</div></div><div class="day"><div class="n">10</div></div><div class="day"><div class="n">11</div></div><div class="day"><div class="n">12</div></div><div class="day"><div class="n">13</div></div><div class="day"><div class="n">14</div></div><div class="day"><div class="n">15</div></div><div class="day"><div class="n">16</div></div><div class="day"><div class="n">17</div></div><div class="day"><div class="n">18</div></div><div class="day"><div class="n">19</div></div><div class="day"><div class="n">20</div></div><div class="day"><div class="n">21</div></div><div class="day"><div class="n">22</div></div><div class="day"><div class="n">23</div></div><div class="day"><div class="n">24</div></div><div class="day"><div class="n">25</div></div><div class="day today"><div class="n">26</div></div><div class="day"><div class="n">27</div></div><div class="day has-work"><div class="n">28</div><div class="dot"></div></div><div class="day"><div class="n">29</div></div><div class="day has-work"><div class="n">30</div><div class="dot"></div></div></div>
+    <div class="legend"><span><span class="sw" style="background:var(--accent)"></span>Día con entrenamiento</span></div>
+  </div>
+
+  <div id="workoutView" style="display: none;">
+    <button class="back" id="backBtn">← Volver al calendario</button>
+    <div class="w-title" id="wTitle">ENTRENAMIENTO 1</div>
+    <div class="w-focus" id="wFocus"></div>
+    <div id="blocksContainer"></div>
+
+    <div class="timer-card">
+      <h3>Cronómetro</h3>
+      <div class="cfg-row">
+        <div class="cfg"><label>Trabajo (seg)</label><input type="number" id="cfgWork" min="1" value="40"></div>
+        <div class="cfg"><label>Descanso (seg)</label><input type="number" id="cfgRest" min="0" value="20"></div>
+        <div class="cfg"><label>Rondas</label><input type="number" id="cfgRounds" min="1" value="8"></div>
+      </div>
+      <div class="phase" id="phaseBox">
+        <div class="phase-label" id="phaseLabel">LISTA</div>
+        <div class="clock" id="clock">00:40</div>
+        <div class="round-info" id="roundInfo">Ronda 1 de 8</div>
+      </div>
+      <div class="timer-btns">
+        <button class="btn-start" id="startBtn">Iniciar</button>
+        <button class="btn-reset" id="resetBtn">Reiniciar</button>
+      </div>
+    </div>
+
+    <div class="survey-card" id="surveyCard">
+      <h3>¿Qué te pareció este entreno?</h3>
+      <div class="field"><input type="text" id="svName" placeholder="Tu nombre"></div>
+      <div class="field-label">Dificultad</div>
+      <div class="scale-row" id="svScale"></div>
+      <div class="field-label">¿Lo completaste?</div>
+      <div class="done-row">
+        <button type="button" class="done-btn" id="svYes">💪 Sí, lo hice</button>
+        <button type="button" class="done-btn" id="svNo">🙁 No, no pude</button>
+      </div>
+      <div class="field" id="svReasonWrap" style="display:none;"><textarea id="svReason" placeholder="¿Por qué no? (opcional)"></textarea></div>
+      <button class="survey-submit" id="svSubmit">Enviar</button>
+      <div class="survey-msg" id="svMsg"></div>
+    </div>
+  </div>
+
+</div>
+
+<script type="application/json" id="workoutsData">{"2026-09-28":{"title":"ENTRENAMIENTO 1","focus":"","blocks":[{"name":"MOVILIDAD","exercises":[{"name":"20\" (trabajo) - 10\" (descanso) x 3 rondas","detail":"","video":""},{"name":"- Movilidad cadera: rana con pierna estirada + delante y atrás dcha","detail":"","video":"https://www.youtube.com/shorts/43P1luQBqbw"},{"name":"- Movilidad cadera: rana con pierna estirada + delante y atrás izq","detail":"","video":""},{"name":"- Movilidad tronco: cuadrupedia (4 patas) + rotación tronco dcha","detail":"","video":""},{"name":"- Movilidad tronco: cuadrupedia (4 patas) + rotación tronco izq","detail":"","video":""}]},{"name":"CALENTAMIENTO","exercises":[{"name":"5-4-3-2","detail":"(Hago 5 repeticiones de los 4 ejercicios, luego 4, 3...)","video":""},{"name":"- Flexiones","detail":"","video":""},{"name":"- Sentadillas","detail":"","video":""},{"name":"- Abdominal remo","detail":"","video":"https://www.youtube.com/shorts/zeDrrFEua_s"},{"name":"- Zancadas","detail":"x pierna","video":""}]},{"name":"BLOQUE PRINCIPAL 1","exercises":[{"name":"TABATA TREN SUPERIOR 20\"-10\" x 8","detail":"Podéis poneros este video que es lo que siempre hacemos o ponéroslo con pitidos","video":"https://www.youtube.com/watch?v=EvTnSg0EGSw"},{"name":"- Plancha alta + goma en muñecas + abro mano dcha","detail":"","video":"https://www.youtube.com/shorts/qgDFSWpaduI"},{"name":"- Plancha alta + goma en muñecas + abro mano izq","detail":"","video":""},{"name":"- Flexiones HR","detail":"Hasta quedarme totalmente tumbada","video":""},{"name":"- Toco hombros","detail":"","video":""},{"note":true,"text":"*MATERIALES: goma pequeña intensidad baja/media"},{"name":"TABATA TREN INFERIOR 20\"-10\" x 8","detail":"Podéis poneros el video que es lo que siempre hacemos o ponéroslo con pitidos","video":"https://www.youtube.com/watch?v=K24MiE7m-zg"},{"name":"- Sentadilla normal + goma dura por encima de las rodillas","detail":"Manter rodillas abiertas, que no se cierren","video":""},{"name":"- Paso a la derecha + sentadilla","detail":"Goma en tobillos -> abro con la derecha -> bajo a sentadilla -> subo de la sentadilla -> cierro con la derecha","video":""},{"name":"- Paso a la izquierda + sentadilla","detail":"","video":""},{"name":"- Goma en tobillos + abro piernas saltando bajando a sentadilla + cierro saltando","detail":"","video":"https://www.youtube.com/shorts/INfV667jMIA"},{"note":true,"text":"*MATERIALES: goma pequeña intensidad media/alta"}]},{"name":"BLOQUE PRINCIPAL 2","exercises":[{"name":"4 RONDAS","detail":"Descanso entre rondas de 40s - 1 minuto","video":""},{"name":"- Press hombros x10","detail":"2 mancuerna o goma larga","video":"https://www.youtube.com/shorts/9cPmHW1CsC8"},{"name":"- Lunges x10/pierna","detail":"2 mancuernas","video":"https://www.youtube.com/shorts/mJilHWIBWO8"},{"name":"- Sentadilla isométrica en pared + abducción goma x20","detail":"Goma pequeña dura, si es de tela mejor. Abducción goma -> goma por encima de las rodillas -> abro","video":""}]},{"name":"BLOQUE PRINCIPAL 3","exercises":[{"name":"TABATA ABDOMINALES 20\"-10\" x 8","detail":"Podéis poneros el video que es lo que siempre hacemos o ponéroslo con pitidos","video":"https://www.youtube.com/watch?v=760TqMz-TwI&list=RDEMw38nB2tRpc82Sr_5tPXThg&start_radio=1"},{"name":"- Crunch","detail":"","video":""},{"name":"- Plancha lateral dcha","detail":"","video":""},{"name":"- Plancha lateral izq","detail":"","video":""},{"name":"- Toco tobillos","detail":"","video":""}]}],"timer":{"work":40,"rest":20,"rounds":8}},"2026-09-30":{"title":"HIIT full body","focus":"Cardio + fuerza · circuito","blocks":[{"name":"Circuito","exercises":[{"name":"Burpees","detail":"—","video":"https://www.youtube.com/results?search_query=burpee+tecnica"},{"name":"Mountain climbers","detail":"—","video":""},{"name":"Jumping jacks","detail":"—","video":""},{"name":"Sentadilla con salto","detail":"—","video":""}]}],"timer":{"work":30,"rest":15,"rounds":10}},"2026-10-02":{"title":"Tren superior","focus":"Fuerza · espalda y brazos","blocks":[{"name":"Bloque principal","exercises":[{"name":"Remo con banda","detail":"4 x 12","video":"https://www.youtube.com/results?search_query=remo+con+banda+tecnica"},{"name":"Flexión de brazos","detail":"3 x 10","video":""},{"name":"Press militar mancuerna","detail":"4 x 10","video":""},{"name":"Curl bíceps","detail":"3 x 12","video":""}]}],"timer":{"work":45,"rest":15,"rounds":6}}}</script>
+<script>
+const workouts = JSON.parse(document.getElementById('workoutsData').textContent);
+
+let viewDate = new Date(2026,8,26); // hoy: 26 sep 2026
+const todayISO = "2026-09-26";
+
+const monthLabel = document.getElementById('monthLabel');
+const grid = document.getElementById('grid');
+const calendarView = document.getElementById('calendarView');
+const workoutView = document.getElementById('workoutView');
+
+document.getElementById('todayLabel').textContent = "Sáb 26 sep";
+
+function iso(y,m,d){
+  return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+}
+
+function renderCalendar(){
+  const y = viewDate.getFullYear(), m = viewDate.getMonth();
+  monthLabel.textContent = viewDate.toLocaleDateString('es-ES',{month:'long', year:'numeric'});
+  grid.innerHTML = '';
+  const firstDow = (new Date(y,m,1).getDay()+6)%7; // lunes=0
+  const daysInMonth = new Date(y,m+1,0).getDate();
+  for(let i=0;i<firstDow;i++){
+    const e=document.createElement('div'); e.className='day empty'; grid.appendChild(e);
+  }
+  for(let d=1; d<=daysInMonth; d++){
+    const dateStr = iso(y,m,d);
+    const cell=document.createElement('div');
+    cell.className='day'+(workouts[dateStr]?' has-work':'')+(dateStr===todayISO?' today':'');
+    cell.innerHTML = `<div class="n">${d}</div>`+(workouts[dateStr]?'<div class="dot"></div>':'');
+    if(workouts[dateStr]){
+      cell.addEventListener('click',()=>openWorkout(dateStr));
+    }
+    grid.appendChild(cell);
+  }
+}
+
+document.getElementById('prevMonth').addEventListener('click',()=>{viewDate.setMonth(viewDate.getMonth()-1); renderCalendar();});
+document.getElementById('nextMonth').addEventListener('click',()=>{viewDate.setMonth(viewDate.getMonth()+1); renderCalendar();});
+
+let timerHandle=null, phaseSeconds=0, currentPhase='work', currentRound=1, totalRounds=8, running=false;
+let currentWorkoutDate=null;
+
+function openWorkout(dateStr){
+  currentWorkoutDate = dateStr;
+  const w = workouts[dateStr];
+  document.getElementById('wTitle').textContent = w.title;
+  document.getElementById('wFocus').textContent = w.focus;
+  const container = document.getElementById('blocksContainer');
+  container.innerHTML = w.blocks.map(b=>`
+    <div class="block">
+      <div class="block-name">${b.name}</div>
+      <ul class="exlist">${b.exercises.map(ex=> ex.note ? `
+        <li style="border-bottom:none; padding-bottom:0;"><span class="exnote">${ex.text}</span></li>` : `
+        <li>
+          <div class="exmain"><span class="exname">${ex.name}</span><span class="exdetail">${ex.detail}</span></div>
+          ${ex.video ? `<a class="exvid" href="${ex.video}" target="_blank" rel="noopener" title="Ver video">▶</a>` : ''}
+        </li>`).join('')}</ul>
+    </div>
+  `).join('');
+  document.getElementById('cfgWork').value = w.timer.work;
+  document.getElementById('cfgRest').value = w.timer.rest;
+  document.getElementById('cfgRounds').value = w.timer.rounds;
+  resetTimer();
+  resetSurvey();
+  calendarView.style.display='none';
+  workoutView.style.display='block';
+  window.scrollTo(0,0);
+}
+
+document.getElementById('backBtn').addEventListener('click',()=>{
+  stopTimer();
+  workoutView.style.display='none';
+  calendarView.style.display='block';
+});
+
+function beep(freq=880, dur=0.12){
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = ctx.createOscillator(); const gain = ctx.createGain();
+    osc.frequency.value=freq; osc.type='sine';
+    osc.connect(gain); gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.15, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+dur);
+    osc.start(); osc.stop(ctx.currentTime+dur);
+  }catch(e){}
+}
+
+function fmt(s){
+  const m=Math.floor(s/60), r=s%60;
+  return `${String(m).padStart(2,'0')}:${String(r).padStart(2,'0')}`;
+}
+
+function updateDisplay(){
+  document.getElementById('clock').textContent = fmt(phaseSeconds);
+  document.getElementById('phaseLabel').textContent = running ? (currentPhase==='work'?'TRABAJO':'DESCANSO') : 'LISTA';
+  document.getElementById('roundInfo').textContent = `Ronda ${currentRound} de ${totalRounds}`;
+  const box = document.getElementById('phaseBox');
+  box.className = 'phase' + (running ? (currentPhase==='work'?' work':' rest') : '');
+}
+
+function resetTimer(){
+  stopTimer();
+  currentPhase='work'; currentRound=1;
+  totalRounds = parseInt(document.getElementById('cfgRounds').value)||1;
+  phaseSeconds = parseInt(document.getElementById('cfgWork').value)||30;
+  running=false;
+  updateDisplay();
+  document.getElementById('startBtn').textContent='Iniciar';
+}
+
+function stopTimer(){
+  if(timerHandle){clearInterval(timerHandle); timerHandle=null;}
+  running=false;
+}
+
+function tick(){
+  phaseSeconds--;
+  if(phaseSeconds<=3 && phaseSeconds>=0) beep(phaseSeconds===0?660:880, phaseSeconds===0?0.2:0.08);
+  if(phaseSeconds<0){
+    const restSec = parseInt(document.getElementById('cfgRest').value)||0;
+    const workSec = parseInt(document.getElementById('cfgWork').value)||30;
+    if(currentPhase==='work' && restSec>0){
+      currentPhase='rest'; phaseSeconds=restSec;
+    } else {
+      if(currentRound>=totalRounds){ stopTimer(); document.getElementById('startBtn').textContent='Iniciar'; beep(660,0.3); updateDisplay(); return; }
+      currentRound++; currentPhase='work'; phaseSeconds=workSec;
+    }
+  }
+  updateDisplay();
+}
+
+document.getElementById('startBtn').addEventListener('click',()=>{
+  if(running){ stopTimer(); document.getElementById('startBtn').textContent='Continuar'; updateDisplay(); return; }
+  if(phaseSeconds<=0) phaseSeconds = parseInt(document.getElementById('cfgWork').value)||30;
+  totalRounds = parseInt(document.getElementById('cfgRounds').value)||1;
+  running=true;
+  document.getElementById('startBtn').textContent='Pausar';
+  updateDisplay();
+  timerHandle = setInterval(tick,1000);
+});
+document.getElementById('resetBtn').addEventListener('click', resetTimer);
+['cfgWork','cfgRest','cfgRounds'].forEach(id=>{
+  document.getElementById(id).addEventListener('change',()=>{ if(!running) resetTimer(); });
+});
+
+renderCalendar();
+
+
+// ---- Encuesta de feedback (envía a Google Forms por detrás, sin mostrar su interfaz) ----
+const FORM_ACTION = 'https://docs.google.com/forms/d/e/1FAIpQLSe03jHrZSb1fZyvT--5BA_2ewL9iW8wwS2O-rvslMB1S24bAg/formResponse';
+const ENTRY_NAME = 'entry.1656795427';
+const ENTRY_DATE = 'entry.963249450';
+const ENTRY_DIFFICULTY = 'entry.2059031862';
+const ENTRY_DONE = 'entry.125987494';
+const ENTRY_REASON = 'entry.529171442';
+const DONE_YES_LABEL = 'Si, todo todito 💪🏻';
+const DONE_NO_LABEL = 'No, no he podido 🙁';
+
+let svDifficulty = null, svDone = null;
+
+const svScale = document.getElementById('svScale');
+for(let i=1;i<=10;i++){
+  const b = document.createElement('button');
+  b.type='button'; b.className='scale-btn'; b.textContent=i;
+  b.addEventListener('click',()=>{
+    svDifficulty = i;
+    document.querySelectorAll('.scale-btn').forEach(x=>x.classList.remove('sel'));
+    b.classList.add('sel');
+  });
+  svScale.appendChild(b);
+}
+
+document.getElementById('svYes').addEventListener('click', ()=>{
+  svDone = 'yes';
+  document.getElementById('svYes').classList.add('sel');
+  document.getElementById('svNo').classList.remove('sel');
+  document.getElementById('svReasonWrap').style.display = 'none';
+});
+document.getElementById('svNo').addEventListener('click', ()=>{
+  svDone = 'no';
+  document.getElementById('svNo').classList.add('sel');
+  document.getElementById('svYes').classList.remove('sel');
+  document.getElementById('svReasonWrap').style.display = 'block';
+});
+
+function resetSurvey(){
+  svDifficulty = null; svDone = null;
+  document.getElementById('svName').value = '';
+  document.getElementById('svReason').value = '';
+  document.getElementById('svReasonWrap').style.display = 'none';
+  document.querySelectorAll('.scale-btn').forEach(x=>x.classList.remove('sel'));
+  document.getElementById('svYes').classList.remove('sel');
+  document.getElementById('svNo').classList.remove('sel');
+  document.getElementById('svMsg').textContent = '';
+  document.getElementById('surveyCard').style.opacity = '1';
+  const submitBtn = document.getElementById('svSubmit');
+  submitBtn.style.display = 'block';
+  submitBtn.disabled = false;
+  document.getElementById('svName').closest('.survey-card').querySelectorAll('input,textarea,button').forEach(el=>el.disabled=false);
+}
+
+document.getElementById('svSubmit').addEventListener('click', ()=>{
+  const name = document.getElementById('svName').value.trim();
+  const msg = document.getElementById('svMsg');
+  if(!name){ msg.textContent = 'Escribí tu nombre para poder enviarlo.'; return; }
+  if(!svDifficulty){ msg.textContent = 'Elegí una dificultad del 1 al 10.'; return; }
+  if(!svDone){ msg.textContent = 'Marcá si lo completaste o no.'; return; }
+
+  const body = new URLSearchParams();
+  body.append(ENTRY_NAME, name);
+  body.append(ENTRY_DATE, currentWorkoutDate || '');
+  body.append(ENTRY_DIFFICULTY, String(svDifficulty));
+  body.append(ENTRY_DONE, svDone==='yes' ? DONE_YES_LABEL : DONE_NO_LABEL);
+  body.append(ENTRY_REASON, document.getElementById('svReason').value.trim());
+
+  fetch(FORM_ACTION, { method:'POST', mode:'no-cors', body })
+    .catch(()=>{})
+    .finally(()=>{
+      msg.textContent = '¡Gracias! Registrado ✅';
+      document.querySelectorAll('#surveyCard input, #surveyCard textarea, #surveyCard button').forEach(el=>el.disabled=true);
+    });
+});
+</script>
+
+
+</body></html>
